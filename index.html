@@ -51,9 +51,11 @@
         .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #999; }
         .add-form { display: flex; gap: 10px; margin-bottom: 15px; background: #f9f9f9; padding: 10px; border-radius: 6px; flex-wrap: wrap; }
         .add-form input, .add-form select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; flex: 1; min-width: 100px;}
-        .manage-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .manage-table th, .manage-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        .action-btn { padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; color: white; margin-right: 5px; }
+        
+        .btn-action {
+            flex: 1; text-align: center; padding: 10px; border-radius: 6px; font-size: 13px; font-weight: bold; color: white; cursor: pointer; border: none;
+            display: flex; justify-content: center; align-items: center;
+        }
         
         /* ================= 电脑端样式 (Desktop) ================= */
         @media (min-width: 768px) {
@@ -82,7 +84,6 @@
             .btn-all-present { background-color: var(--success); }
             .btn-all-absent { background-color: var(--danger); }
             .btn-manage { background-color: var(--info); }
-            .btn-manage-class { background-color: #FF5722; }
             .btn-backup { background-color: #009688; }
             .btn-restore { background-color: #795548; }
             
@@ -158,12 +159,101 @@
             .log-data-group .value span { font-size: 11px; font-weight: normal; color: #888; }
             .log-card-notes { margin-top: 10px; font-size: 12px; color: #d32f2f; background: #ffebee; padding: 8px; border-radius: 6px; }
         }
+
+        /* ================= 打印专用样式 (修复手机端空白问题) ================= */
+        @media print {
+            @page { size: portrait; margin: 10mm; }
+            
+            /* 强制重置全局背景和颜色 */
+            body { 
+                background: white !important; 
+                padding: 0; 
+                margin: 0; 
+                -webkit-print-color-adjust: exact;
+            }
+            
+            /* 隐藏所有不需要打印的 UI */
+            .no-print, .top-nav, .attendance-panel, .mobile-only, .btn-save, .bottom-action-bar, .lang-switcher, .btn-log, .settings-bar, .modal-overlay { 
+                display: none !important; 
+            }
+            
+            /* 强制显示桌面容器（这是产生报表表格的地方） */
+            .desktop-container { 
+                display: block !important; 
+                padding: 0 !important; 
+                margin: 0 !important; 
+                width: 100% !important;
+            }
+            
+            /* 修复桌面端的隐藏类可能导致的空白 */
+            .desktop-only {
+                display: block !important;
+            }
+
+            /* 报表面板撑满整页 */
+            .log-panel { 
+                display: block !important; 
+                width: 100% !important; 
+                min-width: 100% !important; 
+                box-shadow: none !important; 
+                padding: 0 !important; 
+                border: none !important; 
+                overflow: visible !important;
+            }
+            
+            /* 打印时标题与信息栏的排版 */
+            .log-header { font-size: 18px; margin-bottom: 5px; text-align: center; font-weight: bold; }
+            
+            /* 将信息栏横向排列 */
+            .info-row { 
+                display: flex !important; 
+                flex-direction: row !important; 
+                border: 1px solid #000 !important; 
+                margin-bottom: 10px; 
+                border-radius: 4px;
+                overflow: hidden;
+            }
+            .info-row > div { 
+                flex: 1; 
+                padding: 6px 2px; 
+                text-align: center; 
+                border-right: 1px solid #000 !important; 
+                font-size: 12px;
+            }
+            .info-row > div:last-child { border-right: none !important; }
+            .info-row > div br { display: none; } /* 隐藏换行，使其保持横排 */
+            .info-row > div strong { margin-left: 4px; }
+
+            /* 表格排版 */
+            .dt-table { font-size: 11px; width: 100%; margin-bottom: 10px; border-collapse: collapse; }
+            .dt-table th, .dt-table td { padding: 4px 2px; border: 1px solid #000 !important; text-align: center; }
+            .dt-table th { background: #f5f5f5 !important; }
+            
+            /* 底部统计与名单强制显示 */
+            .global-stats { 
+                display: flex !important; 
+                border: 1px solid #000 !important; 
+                margin-bottom: 10px; 
+                page-break-inside: avoid; 
+                justify-content: space-between; 
+                font-size: 12px; 
+                padding: 10px;
+                background: none !important;
+            }
+            .absent-list-box { 
+                display: block !important;
+                page-break-inside: avoid; 
+                border: 1px solid #000 !important; 
+                padding: 10px; 
+            }
+            .absent-table th, .absent-table td { border: 1px solid #000 !important; font-size: 11px; padding: 4px; }
+        }
     </style>
 </head>
 <body>
 
-<div class="top-nav">
-    <h2 id="navTitle">🏫 学校日志系统</h2>
+<div class="top-nav no-print">
+    <h2 id="navTitle" data-i18n="app_title">🏫 学校日志系统</h2>
     <div class="lang-switcher">
         <select id="langSelect" onchange="changeLanguage()">
             <option value="zh">中文</option>
@@ -173,75 +263,73 @@
     </div>
 </div>
 
+<!-- 全局隐藏的文件输入框，用于恢复数据 -->
+<input type="file" id="globalRestoreInput" accept=".json" onchange="restoreData(event)" style="display: none;">
+
 <!-- ==================== 电脑端布局 (Desktop) ==================== -->
 <div class="desktop-only desktop-container">
     <!-- 左侧：点名控制台 -->
-    <div class="attendance-panel">
-        <h3 style="margin-top:0;">📋 点名控制台</h3>
+    <div class="attendance-panel no-print">
+        <h3 style="margin-top:0;" data-i18n="console_title">📋 点名控制台</h3>
         
         <div class="form-group">
-            <label>日期 Tarikh</label>
+            <label data-i18n="date_label">日期 Tarikh</label>
             <input type="date" id="dt_dateInput" onchange="syncDate('dt')">
         </div>
         <div class="info-display">
-            <span>学期: <strong class="dispSem">-</strong></span>
-            <span>周次: <strong class="dispWeek">-</strong></span>
-            <span>星期: <strong class="dispDay">-</strong></span>
+            <span><span data-i18n="sem_label">学期</span>: <strong class="dispSem">-</strong></span>
+            <span><span data-i18n="week_label">周次</span>: <strong class="dispWeek">-</strong></span>
+            <span><span data-i18n="day_label">星期</span>: <strong class="dispDay">-</strong></span>
         </div>
 
         <div class="form-group">
-            <label>选择班级 Kelas</label>
+            <label data-i18n="select_class_title">选择班级 Kelas</label>
             <select id="dt_classSelect" onchange="changeClass('dt')"></select>
         </div>
 
         <div class="batch-buttons">
-            <button class="btn-all-present" onclick="batchSet(true)">✅ 全部出席</button>
-            <button class="btn-all-absent" onclick="batchSet(false)">❌ 全部缺席</button>
+            <button class="btn-all-present" onclick="batchSet(true)" data-i18n="btn_all_present">✅ 全部出席</button>
+            <button class="btn-all-absent" onclick="batchSet(false)" data-i18n="btn_all_absent">❌ 全部缺席</button>
         </div>
         <div class="batch-buttons">
-            <button class="btn-manage" onclick="openManageModal()">⚙️ 管理学生</button>
-            <button class="btn-manage-class" onclick="openManageModal()">🏫 管理班级</button>
+            <button class="btn-manage" onclick="openManageModal()" data-i18n="btn_manage">⚙️ 系统管理</button>
         </div>
+        
         <div class="batch-buttons" style="margin-bottom:15px;">
-            <button class="btn-backup" onclick="backupData()">💾 备份数据</button>
-            <label class="btn-restore" style="flex:1; text-align:center; padding:10px; border-radius:6px; font-size:13px; font-weight:bold; color:white; display:flex; justify-content:center; align-items:center; background-color:var(--warning); cursor:pointer;">
-                📂 恢复数据
-                <input type="file" id="dt_restoreFile" accept=".json" onchange="restoreData(event)" style="display: none;">
-            </label>
+            <button class="btn-action btn-backup" onclick="backupData()" data-i18n="btn_backup">💾 备份数据</button>
+            <button class="btn-action btn-restore" onclick="document.getElementById('globalRestoreInput').click()" data-i18n="btn_restore">📂 恢复数据</button>
         </div>
 
-        <div class="student-list" id="dt_studentList">
-            <!-- JS 渲染学生卡片 -->
-        </div>
+        <div class="student-list" id="dt_studentList"></div>
 
-        <button class="btn-save" onclick="saveAttendance()">💾 保存/更新今日点名数据</button>
+        <button class="btn-save" onclick="saveAttendance()" data-i18n="btn_save">💾 保存/更新今日点名数据</button>
     </div>
 
     <!-- 右侧：日志表 -->
     <div class="log-panel">
-        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px;">
-            <button onclick="exportToCSV()" style="padding: 8px 15px; background: #00897B; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">📊 导出今日结果</button>
-            <button onclick="window.print()" style="padding: 8px 15px; background: #455A64; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">🖨️ 打印 / 导出PDF</button>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px;" class="no-print">
+            <button onclick="window.print()" style="padding: 8px 15px; background: #455A64; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;" data-i18n="btn_print">🖨️ 打印报告 (单页直式)</button>
         </div>
 
-        <div class="log-header">学校日志 REKOD HARIAN SEKOLAH</div>
+        <div class="log-header" data-i18n="log_header">学校日志 REKOD HARIAN SEKOLAH</div>
         
+        <!-- 信息栏 -->
         <div class="info-row">
-            <div>学期 Semester<br><strong class="dispSem">-</strong></div>
-            <div>周次 Minggu<br><strong class="dispWeek">-</strong></div>
-            <div>星期 Hari<br><strong class="dispDay">-</strong></div>
-            <div>日期 Tarikh<br><strong class="dispDate">-</strong></div>
+            <div><span data-i18n="sem_label">学期 Semester</span> <strong class="dispSem">-</strong></div>
+            <div><span data-i18n="week_label">周次 Minggu</span> <strong class="dispWeek">-</strong></div>
+            <div><span data-i18n="day_label">星期 Hari</span> <strong class="dispDay">-</strong></div>
+            <div><span data-i18n="date_label">日期 Tarikh</span> <strong class="dispDate">-</strong></div>
         </div>
 
         <table class="dt-table">
             <thead>
                 <tr>
-                    <th rowspan="2">项目<br>人数<br>组别</th>
-                    <th colspan="2">Keramaian<br>在籍</th>
-                    <th colspan="2">Kedatangan<br>出席</th>
-                    <th colspan="2">Tak Hadir<br>缺席</th>
-                    <th rowspan="2">Catatan<br>备注</th>
-                    <th rowspan="2">出席率<br>Kadar</th>
+                    <th rowspan="2" data-i18n="th_class">项目<br>人数<br>组别</th>
+                    <th colspan="2" data-i18n="th_total">Keramaian<br>在籍</th>
+                    <th colspan="2" data-i18n="th_present">Kedatangan<br>出席</th>
+                    <th colspan="2" data-i18n="th_absent">Tak Hadir<br>缺席</th>
+                    <th rowspan="2" data-i18n="th_notes">Catatan<br>备注</th>
+                    <th rowspan="2" data-i18n="th_rate">出席率<br>Kadar</th>
                 </tr>
                 <tr>
                     <th>L</th><th>P</th>
@@ -253,16 +341,16 @@
         </table>
 
         <div class="global-stats">
-            <div style="text-align: center;"><span>今日全校总人数</span><br><strong id="dt_globalTotal" style="font-size: 18px; color: #d32f2f;">-</strong></div>
-            <div style="text-align: center;"><span>今日全级出席</span><br><strong id="dt_globalPresent" style="font-size: 18px; color: #2e7d32;">-</strong></div>
-            <div style="text-align: center;"><span>今日全级缺席</span><br><strong id="dt_globalAbsent" style="font-size: 18px; color: #d32f2f;">-</strong></div>
-            <div style="text-align: center;"><span>全级出席率</span><br><strong id="dt_globalPercent" style="font-size: 18px; color: #1976D2;">-</strong></div>
+            <div style="text-align: center;"><span data-i18n="stat_total">今日全校总人数</span><br><strong id="dt_globalTotal" style="font-size: 18px; color: #d32f2f;">-</strong></div>
+            <div style="text-align: center;"><span data-i18n="stat_present">今日全级出席</span><br><strong id="dt_globalPresent" style="font-size: 18px; color: #2e7d32;">-</strong></div>
+            <div style="text-align: center;"><span data-i18n="stat_absent">今日全级缺席</span><br><strong id="dt_globalAbsent" style="font-size: 18px; color: #d32f2f;">-</strong></div>
+            <div style="text-align: center;"><span data-i18n="stat_rate">全级出席率</span><br><strong id="dt_globalPercent" style="font-size: 18px; color: #1976D2;">-</strong></div>
         </div>
 
         <div class="absent-list-box">
-            <h4 style="margin: 0 0 10px 0; color: #c62828;">📝 缺席学生名单</h4>
+            <h4 style="margin: 0 0 10px 0; color: #c62828;" data-i18n="absent_title">📝 缺席学生名单</h4>
             <table class="absent-table">
-                <thead><tr><th>班级</th><th>编号</th><th>姓名</th><th>性别</th></tr></thead>
+                <thead><tr><th data-i18n="th_absent_class">班级</th><th data-i18n="th_absent_no">编号</th><th data-i18n="th_absent_name">姓名</th><th data-i18n="th_absent_gender">性别</th></tr></thead>
                 <tbody id="dt_absentListBody"></tbody>
             </table>
         </div>
@@ -270,77 +358,76 @@
 </div>
 
 <!-- ==================== 手机端布局 (Mobile) ==================== -->
-<div class="mobile-only">
+<div class="mobile-only no-print">
     <!-- 页面 1：主页 -->
     <div class="page" id="m_pageHome">
         <div class="info-card">
-            <label>选择日期 (Date)</label>
+            <label data-i18n="date_label">选择日期 (Date)</label>
             <input type="date" id="m_dateInput" onchange="syncDate('m')">
             <div class="info-row" style="display:flex; justify-content:space-between; margin-top:10px; font-size:13px; background:#e3f2fd; padding:10px; border-radius:8px;">
-                <span>学期: <strong class="dispSem">-</strong></span>
-                <span>周次: <strong class="dispWeek">-</strong></span>
-                <span>星期: <strong class="dispDay">-</strong></span>
+                <span><span data-i18n="sem_label">学期</span>: <strong class="dispSem">-</strong></span>
+                <span><span data-i18n="week_label">周次</span>: <strong class="dispWeek">-</strong></span>
+                <span><span data-i18n="day_label">星期</span>: <strong class="dispDay">-</strong></span>
             </div>
         </div>
 
-        <div style="font-size: 15px; font-weight: bold; margin: 10px 0;">请选择班级进行点名：</div>
+        <div style="font-size: 15px; font-weight: bold; margin: 10px 0;" data-i18n="select_class_title">请选择班级进行点名：</div>
         <div class="class-grid" id="m_classGrid"></div>
 
-        <button class="btn-log" onclick="goToPage('m_pageLog')">📊 查看学校日志 (School Log)</button>
+        <button class="btn-log" onclick="goToPage('m_pageLog')" data-i18n="btn_view_log">📊 查看学校日志 (School Log)</button>
 
         <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button onclick="backupData()" style="flex:1; padding:10px; border:1px solid #ddd; background:white; border-radius:8px; font-size:13px;">💾 备份数据</button>
-            <label style="flex:1; padding:10px; border:1px solid #ddd; background:white; border-radius:8px; font-size:13px; text-align:center;">
-                📂 恢复数据
-                <input type="file" id="m_restoreFile" accept=".json" onchange="restoreData(event)" style="display: none;">
-            </label>
-            <button onclick="openManageModal()" style="flex:1; padding:10px; border:1px solid #ddd; background:white; border-radius:8px; font-size:13px;">⚙️ 管理</button>
+            <button onclick="backupData()" style="flex:1; padding:10px; border:1px solid #ddd; background:white; border-radius:8px; font-size:13px;" data-i18n="btn_backup">💾 备份</button>
+            <button onclick="document.getElementById('globalRestoreInput').click()" style="flex:1; padding:10px; border:1px solid #ddd; background:white; border-radius:8px; font-size:13px;" data-i18n="btn_restore">📂 恢复</button>
+            <button onclick="openManageModal()" style="flex:1; padding:10px; border:1px solid #ddd; background:white; border-radius:8px; font-size:13px;" data-i18n="btn_manage">⚙️ 管理</button>
         </div>
     </div>
 
     <!-- 页面 2：点名页 -->
     <div class="page hidden" id="m_pageAttendance">
         <div class="attendance-header">
-            <button class="back-btn" onclick="goToPage('m_pageHome')">❮ 返回</button>
+            <button class="back-btn" onclick="goToPage('m_pageHome')">❮ <span data-i18n="btn_back">返回</span></button>
             <h3 style="margin:0; font-size:18px;" id="m_currentClassName">-</h3>
             <div style="width: 50px;"></div>
         </div>
 
-        <div style="text-align: center; font-size: 12px; color: #666; margin-bottom: 10px;">默认全员出席。点击学生名字将其标记为缺席 (变红)。</div>
+        <div style="text-align: center; font-size: 12px; color: #666; margin-bottom: 10px;" data-i18n="attendance_tip">默认全员出席。点击学生名字将其标记为缺席 (变红)。</div>
         <div class="student-grid" id="m_studentList"></div>
 
         <div class="bottom-action-bar">
-            <button class="btn-batch-m" onclick="batchSet(true)">全部出席</button>
-            <button class="btn-batch-m" onclick="batchSet(false)" style="background:#F44336;">全部缺席</button>
-            <button class="btn-save-m" onclick="saveAttendance()">💾 保存</button>
+            <button class="btn-batch-m" onclick="batchSet(true)" data-i18n="btn_all_present">全部出席</button>
+            <button class="btn-batch-m" onclick="batchSet(false)" style="background:#F44336;" data-i18n="btn_all_absent">全部缺席</button>
+            <button class="btn-save-m" onclick="saveAttendance()" data-i18n="btn_save">💾 保存</button>
         </div>
     </div>
 
     <!-- 页面 3：日志页 -->
     <div class="page hidden" id="m_pageLog">
         <div class="attendance-header">
-            <button class="back-btn" onclick="goToPage('m_pageHome')">❮ 返回</button>
-            <h3 style="margin:0; font-size:18px;">📊 学校日志</h3>
-            <button class="back-btn" onclick="window.print()" style="color: #455A64;">🖨️</button>
+            <button class="back-btn" onclick="goToPage('m_pageHome')">❮ <span data-i18n="btn_back">返回</span></button>
+            <h3 style="margin:0; font-size:18px;" data-i18n="log_title">📊 学校日志</h3>
+            <button class="back-btn" onclick="window.print()" style="color: #455A64;" data-i18n="btn_print">🖨️</button>
         </div>
 
         <div class="info-card" style="padding: 10px; margin-bottom: 5px; text-align: center; font-size: 13px;">
-            学期: <strong class="dispSem">-</strong> | 周次: <strong class="dispWeek">-</strong> | 日期: <strong class="dispDate">-</strong>
+            <span data-i18n="sem_label">学期</span>: <strong class="dispSem">-</strong> | 
+            <span data-i18n="week_label">周次</span>: <strong class="dispWeek">-</strong> | 
+            <span data-i18n="date_label">日期</span>: <strong class="dispDate">-</strong>
         </div>
 
         <div id="m_logCardContainer"></div>
 
         <div class="global-stats" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:15px; margin-top:15px;">
-            <div style="text-align: center;"><span style="font-size:12px; color:#666;">全校总人数</span><br><strong id="m_globalTotal" style="font-size:18px; color:#d32f2f;">-</strong></div>
-            <div style="text-align: center;"><span style="font-size:12px; color:#666;">全级出席</span><br><strong id="m_globalPresent" style="font-size:18px; color:#2e7d32;">-</strong></div>
-            <div style="text-align: center;"><span style="font-size:12px; color:#666;">全级缺席</span><br><strong id="m_globalAbsent" style="font-size:18px; color:#d32f2f;">-</strong></div>
-            <div style="text-align: center;"><span style="font-size:12px; color:#666;">全级出席率</span><br><strong id="m_globalPercent" style="font-size:18px; color:#1976D2;">-</strong></div>
+            <div style="text-align: center;"><span style="font-size:12px; color:#666;" data-i18n="stat_total">全校总人数</span><br><strong id="m_globalTotal" style="font-size:18px; color:#d32f2f;">-</strong></div>
+            <div style="text-align: center;"><span style="font-size:12px; color:#666;" data-i18n="stat_present">全级出席</span><br><strong id="m_globalPresent" style="font-size:18px; color:#2e7d32;">-</strong></div>
+            <div style="text-align: center;"><span style="font-size:12px; color:#666;" data-i18n="stat_absent">全级缺席</span><br><strong id="m_globalAbsent" style="font-size:18px; color:#d32f2f;">-</strong></div>
+            <div style="text-align: center;"><span style="font-size:12px; color:#666;" data-i18n="stat_rate">全级出席率</span><br><strong id="m_globalPercent" style="font-size:18px; color:#1976D2;">-</strong></div>
         </div>
 
         <div class="absent-list-box">
-            <h4 style="margin: 0 0 10px 0; color: #c62828; font-size:14px;">📝 缺席学生名单</h4>
+            <h4 style="margin: 0 0 10px 0; color: #c62828; font-size:14px;" data-i18n="absent_title">📝 缺席学生名单</h4>
             <table class="absent-table" style="width:100%; border-collapse:collapse; font-size:13px;">
-                <thead><tr><th>班级</th><th>姓名</th><th>性别</th></tr></thead>
+                <thead><tr><th data-i18n="th_absent_class">班级</th><th data-i18n="th_absent_name">姓名</th><th data-i18n="th_absent_gender">性别</th></tr></thead>
                 <tbody id="m_absentListBody"></tbody>
             </table>
         </div>
@@ -348,35 +435,35 @@
 </div>
 
 <!-- ==================== 弹窗：综合管理 ==================== -->
-<div id="manageModal" class="modal-overlay">
+<div id="manageModal" class="modal-overlay no-print">
     <div class="modal-content">
         <div class="modal-header">
-            <h3 style="margin:0;">⚙️ 系统管理</h3>
+            <h3 style="margin:0;" data-i18n="modal_manage">⚙️ 系统管理</h3>
             <button class="close-btn" onclick="closeManageModal()">×</button>
         </div>
         
         <div style="background:#f5f5f5; padding:10px; border-radius:8px; margin-bottom:15px;">
-            <p style="font-size:12px; margin:0 0 10px 0; color:#555;">上传 CSV 批量导入学生 (Class,Name,Gender)</p>
+            <p style="font-size:12px; margin:0 0 10px 0; color:#555;" data-i18n="csv_tip">上传 CSV 批量导入学生 (Class,Name,Gender)</p>
             <div style="display:flex; gap:10px;">
-                <label style="flex:1; background:#2196F3; color:white; padding:10px; text-align:center; border-radius:6px; font-size:14px; cursor:pointer;">
+                <label style="flex:1; background:#2196F3; color:white; padding:10px; text-align:center; border-radius:6px; font-size:14px; cursor:pointer;" data-i18n="btn_upload">
                     上传 CSV
                     <input type="file" accept=".csv" onchange="importAllStudentsCSV(event)" style="display:none;">
                 </label>
-                <button onclick="downloadAllStudentsTemplate()" style="flex:1; background:#FF9800; color:white; border:none; padding:10px; border-radius:6px; font-size:14px; cursor:pointer;">下载模板</button>
+                <button onclick="downloadAllStudentsTemplate()" style="flex:1; background:#FF9800; color:white; border:none; padding:10px; border-radius:6px; font-size:14px; cursor:pointer;" data-i18n="btn_template">下载模板</button>
             </div>
         </div>
 
-        <h4 style="margin:15px 0 10px 0;">🏫 班级管理</h4>
+        <h4 style="margin:15px 0 10px 0;" data-i18n="manage_classes">🏫 班级管理</h4>
         <div style="display:flex; gap:10px; margin-bottom:10px;">
             <input type="text" id="newClassName" placeholder="新班级名称" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px;">
-            <button onclick="addClass()" style="background:#FF5722; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;">添加</button>
+            <button onclick="addClass()" style="background:#FF5722; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;" data-i18n="btn_add">添加</button>
         </div>
         <div id="classManageList" style="max-height: 200px; overflow-y:auto; border:1px solid #eee; border-radius:6px;"></div>
         
-        <h4 style="margin:20px 0 10px 0;">👨‍🎓 学生管理</h4>
+        <h4 style="margin:20px 0 10px 0;" data-i18n="manage_students">👨‍🎓 学生管理</h4>
         <div style="display:flex; gap:10px; margin-bottom:10px;">
             <select id="manageClassSelect" onchange="renderStudentManageList()" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px;"></select>
-            <button onclick="reorderStudentNumbers()" style="background:#607D8B; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;">重排</button>
+            <button onclick="reorderStudentNumbers()" style="background:#607D8B; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;" data-i18n="btn_reorder">重排</button>
         </div>
         <div style="display:flex; gap:10px; margin-bottom:10px;">
             <input type="text" id="newName" placeholder="学生姓名" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px;">
@@ -384,13 +471,55 @@
                 <option value="L">L</option>
                 <option value="P">P</option>
             </select>
-            <button onclick="addStudent()" style="background:#4CAF50; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;">添加</button>
+            <button onclick="addStudent()" style="background:#4CAF50; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;" data-i18n="btn_add">添加</button>
         </div>
         <div id="studentManageList" style="max-height: 250px; overflow-y:auto; border:1px solid #eee; border-radius:6px;"></div>
     </div>
 </div>
 
 <script>
+    // --- 0. 多语言字典 ---
+    const i18n = {
+        zh: {
+            app_title: "🏫 学校日志系统", console_title: "📋 点名控制台", date_label: "日期 Tarikh", sem_label: "学期", week_label: "周次", day_label: "星期",
+            select_class_title: "选择班级 Kelas", btn_all_present: "✅ 全部出席", btn_all_absent: "❌ 全部缺席", btn_manage: "⚙️ 系统管理",
+            btn_backup: "💾 备份数据", btn_restore: "📂 恢复数据", btn_save: "💾 保存", btn_print: "🖨️ 打印报告 (单页直式)", btn_back: "返回",
+            attendance_tip: "默认全员出席。点击学生名字将其标记为缺席 (变红)。", btn_view_log: "📊 查看学校日志 (School Log)",
+            log_title: "📊 学校日志", log_header: "学校日志 REKOD HARIAN SEKOLAH",
+            th_class: "项目<br>人数<br>组别", th_total: "Keramaian<br>在籍", th_present: "Kedatangan<br>出席", th_absent: "Tak Hadir<br>缺席", th_notes: "Catatan<br>备注", th_rate: "出席率<br>Kadar",
+            stat_total: "今日全校总人数", stat_present: "今日全级出席", stat_absent: "今日全级缺席", stat_rate: "全级出席率",
+            absent_title: "📝 缺席学生名单", th_absent_class: "班级", th_absent_no: "编号", th_absent_name: "姓名", th_absent_gender: "性别",
+            modal_manage: "⚙️ 系统管理", csv_tip: "上传 CSV 批量导入学生 (Class,Name,Gender)", btn_upload: "上传 CSV", btn_template: "下载模板",
+            manage_classes: "🏫 班级管理", manage_students: "👨‍🎓 学生管理", btn_add: "添加", btn_reorder: "重排"
+        },
+        en: {
+            app_title: "🏫 School Log System", console_title: "📋 Attendance Console", date_label: "Date", sem_label: "Sem", week_label: "Week", day_label: "Day",
+            select_class_title: "Select Class", btn_all_present: "✅ All Present", btn_all_absent: "❌ All Absent", btn_manage: "⚙️ Manage",
+            btn_backup: "💾 Backup Data", btn_restore: "📂 Restore Data", btn_save: "💾 Save", btn_print: "🖨️ Print Report (Portrait)", btn_back: "Back",
+            attendance_tip: "All present by default. Tap name to mark absent (Red).", btn_view_log: "📊 View School Log",
+            log_title: "📊 School Log", log_header: "School Log REKOD HARIAN SEKOLAH",
+            th_class: "Class", th_total: "Enrolled", th_present: "Present", th_absent: "Absent", th_notes: "Notes", th_rate: "Rate",
+            stat_total: "Total Students", stat_present: "Total Present", stat_absent: "Total Absent", stat_rate: "Overall Rate",
+            absent_title: "📝 Absentee List", th_absent_class: "Class", th_absent_no: "No.", th_absent_name: "Name", th_absent_gender: "Gender",
+            modal_manage: "⚙️ System Management", csv_tip: "Upload CSV (Class,Name,Gender)", btn_upload: "Upload CSV", btn_template: "Download Template",
+            manage_classes: "🏫 Manage Classes", manage_students: "👨‍🎓 Manage Students", btn_add: "Add", btn_reorder: "Reorder"
+        },
+        ms: {
+            app_title: "🏫 Sistem Log Sekolah", console_title: "📋 Konsol Kehadiran", date_label: "Tarikh", sem_label: "Sem", week_label: "Minggu", day_label: "Hari",
+            select_class_title: "Pilih Kelas", btn_all_present: "✅ Semua Hadir", btn_all_absent: "❌ Semua Tidak Hadir", btn_manage: "⚙️ Urus",
+            btn_backup: "💾 Sandar Data", btn_restore: "📂 Pulihkan Data", btn_save: "💾 Simpan", btn_print: "🖨️ Cetak Laporan (Potret)", btn_back: "Kembali",
+            attendance_tip: "Semua hadir secara lalai. Ketik nama untuk tanda tidak hadir (Merah).", btn_view_log: "📊 Lihat Log Sekolah",
+            log_title: "📊 Log Sekolah", log_header: "Rekod Harian Sekolah",
+            th_class: "Kelas", th_total: "Keramaian", th_present: "Kedatangan", th_absent: "Tak Hadir", th_notes: "Catatan", th_rate: "Kadar",
+            stat_total: "Jumlah Pelajar", stat_present: "Jumlah Hadir", stat_absent: "Jumlah Tidak Hadir", stat_rate: "Kadar Keseluruhan",
+            absent_title: "📝 Senarai Tidak Hadir", th_absent_class: "Kelas", th_absent_no: "No.", th_absent_name: "Nama", th_absent_gender: "Jantina",
+            modal_manage: "⚙️ Pengurusan Sistem", csv_tip: "Muat naik CSV (Class,Name,Gender)", btn_upload: "Muat Naik CSV", btn_template: "Templat",
+            manage_classes: "🏫 Urus Kelas", manage_students: "👨‍🎓 Urus Pelajar", btn_add: "Tambah", btn_reorder: "Susun"
+        }
+    };
+
+    let currentLang = localStorage.getItem('appLang') || 'zh';
+
     // --- 1. 基础数据 ---
     const defaultSchoolData = {
         "PRA": [ { no: 1, name: "阿克兰", gender: "L" }, { no: 2, name: "谢梓莹", gender: "P" }, { no: 3, name: "程嘉怡", gender: "P" } ],
@@ -407,8 +536,31 @@
     let currentDateStr = "";
     let isMobile = window.innerWidth < 768;
 
-    // --- 2. 初始化 ---
+    // --- 2. 多语言切换 ---
+    function changeLanguage() {
+        currentLang = document.getElementById('langSelect').value;
+        localStorage.setItem('appLang', currentLang);
+        applyLanguage();
+    }
+
+    function applyLanguage() {
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (i18n[currentLang][key]) {
+                el.innerHTML = i18n[currentLang][key];
+            }
+        });
+        renderAllViews();
+        if(document.getElementById('manageModal').style.display === 'flex') {
+            renderClassManageList();
+            renderStudentManageList();
+        }
+    }
+
+    // --- 3. 初始化 ---
     function init() {
+        document.getElementById('langSelect').value = currentLang;
+        
         const today = new Date();
         const offset = today.getTimezoneOffset();
         const localToday = new Date(today.getTime() - (offset*60*1000));
@@ -420,9 +572,10 @@
         calculateWeekAndSemester();
         updateClassDropdowns();
         renderHomeClasses();
+        applyLanguage();
     }
 
-    // --- 3. 数据同步与计算 ---
+    // --- 4. 数据同步与计算 ---
     function syncDate(source) {
         if (source === 'dt') {
             document.getElementById('m_dateInput').value = document.getElementById('dt_dateInput').value;
@@ -487,14 +640,14 @@
         }
     }
 
-    // --- 4. 页面切换 (手机端) ---
+    // --- 5. 页面切换 (手机端) ---
     function goToPage(pageId) {
         document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
         document.getElementById(pageId).classList.remove('hidden');
         if(pageId === 'm_pageLog') renderMobileLog();
     }
 
-    // --- 5. 渲染视图 ---
+    // --- 6. 渲染视图 ---
     function renderAllViews() {
         if (isMobile) {
             renderMobileAttendance();
@@ -505,11 +658,11 @@
         }
     }
 
-    // 电脑端点名渲染
     function changeClass(source) {
         if(source === 'dt') currentClass = document.getElementById('dt_classSelect').value;
         renderDesktopAttendance();
     }
+
     function renderDesktopAttendance() {
         const list = document.getElementById('dt_studentList');
         list.innerHTML = '';
@@ -531,7 +684,6 @@
         renderDesktopLog();
     }
 
-    // 手机端点名渲染
     function renderHomeClasses() {
         if(!isMobile) return;
         const grid = document.getElementById('m_classGrid');
@@ -549,8 +701,10 @@
             grid.appendChild(btn);
         });
     }
+
     function renderMobileAttendance() {
         const list = document.getElementById('m_studentList');
+        if(!list) return;
         list.innerHTML = '';
         if (!currentClass || !schoolData[currentClass]) return;
         schoolData[currentClass].sort((a,b)=>a.no-b.no).forEach(s => {
@@ -568,7 +722,6 @@
         });
     }
 
-    // 批量操作
     function batchSet(isPresent) {
         if (!currentClass) return;
         schoolData[currentClass].forEach(s => {
@@ -579,7 +732,6 @@
         renderAllViews();
     }
 
-    // 保存
     function saveAttendance() {
         localStorage.setItem('schoolLogData_2026', JSON.stringify(statusStore));
         if (!historyData[currentDateStr]) historyData[currentDateStr] = {};
@@ -593,7 +745,7 @@
         if(isMobile) goToPage('m_pageHome');
     }
 
-    // --- 6. 日志渲染 ---
+    // --- 7. 日志渲染 ---
     function computeLogData() {
         let data = [];
         let grand = { totalL:0, totalP:0, pL:0, pP:0, aL:0, aP:0 };
@@ -658,34 +810,40 @@
         const container = document.getElementById('m_logCardContainer');
         const absTbody = document.getElementById('m_absentListBody');
 
-        container.innerHTML = data.map(d => `
-            <div class="log-card">
-                <div class="log-card-header">
-                    <div class="log-card-title">${d.cls}</div>
-                    <div class="log-card-rate">${d.rate}</div>
+        if(container) {
+            container.innerHTML = data.map(d => `
+                <div class="log-card">
+                    <div class="log-card-header">
+                        <div class="log-card-title">${d.cls}</div>
+                        <div class="log-card-rate">${d.rate}</div>
+                    </div>
+                    <div class="log-card-body">
+                        <div class="log-data-group"><div class="title">${i18n[currentLang].th_total.split('<br>')[1] || '在籍'}</div><div class="value">${d.rL} / ${d.rP}</div></div>
+                        <div class="log-data-group"><div class="title">${i18n[currentLang].th_present.split('<br>')[1] || '出席'}</div><div class="value" style="color:#2e7d32;">${d.rPL} / ${d.rPP}</div></div>
+                        <div class="log-data-group"><div class="title">${i18n[currentLang].th_absent.split('<br>')[1] || '缺席'}</div><div class="value" style="color:#c62828;">${d.rAL} / ${d.rAP}</div></div>
+                    </div>
+                    ${d.catatan ? `<div class="log-card-notes">${i18n[currentLang].th_notes.split('<br>')[1] || '备注'}: ${d.catatan}</div>` : ''}
                 </div>
-                <div class="log-card-body">
-                    <div class="log-data-group"><div class="title">在籍 (L/P)</div><div class="value">${d.rL} / ${d.rP}</div></div>
-                    <div class="log-data-group"><div class="title">出席 (L/P)</div><div class="value" style="color:#2e7d32;">${d.rPL} / ${d.rPP}</div></div>
-                    <div class="log-data-group"><div class="title">缺席 (L/P)</div><div class="value" style="color:#c62828;">${d.rAL} / ${d.rAP}</div></div>
-                </div>
-                ${d.catatan ? `<div class="log-card-notes">备注: ${d.catatan}</div>` : ''}
-            </div>
-        `).join('');
-
-        if(absentList.length === 0) {
-            absTbody.innerHTML = `<tr><td colspan="3" style="color:#4CAF50; padding:10px;">🎉 今日全员出席</td></tr>`;
-        } else {
-            absTbody.innerHTML = absentList.map(a => `<tr><td>${a.cls}</td><td>${a.name}</td><td>${a.gender}</td></tr>`).join('');
+            `).join('');
         }
 
-        document.getElementById('m_globalTotal').innerText = grand.totalL + grand.totalP;
-        document.getElementById('m_globalPresent').innerText = grand.pL + grand.pP;
-        document.getElementById('m_globalAbsent').innerText = grand.aL + grand.aP;
-        document.getElementById('m_globalPercent').innerText = ((grand.pL+grand.pP)/(grand.totalL+grand.totalP)*100 || 0).toFixed(2) + '%';
+        if(absTbody) {
+            if(absentList.length === 0) {
+                absTbody.innerHTML = `<tr><td colspan="3" style="color:#4CAF50; padding:10px;">🎉 今日全员出席</td></tr>`;
+            } else {
+                absTbody.innerHTML = absentList.map(a => `<tr><td>${a.cls}</td><td>${a.name}</td><td>${a.gender}</td></tr>`).join('');
+            }
+        }
+
+        if(document.getElementById('m_globalTotal')) {
+            document.getElementById('m_globalTotal').innerText = grand.totalL + grand.totalP;
+            document.getElementById('m_globalPresent').innerText = grand.pL + grand.pP;
+            document.getElementById('m_globalAbsent').innerText = grand.aL + grand.aP;
+            document.getElementById('m_globalPercent').innerText = ((grand.pL+grand.pP)/(grand.totalL+grand.totalP)*100 || 0).toFixed(2) + '%';
+        }
     }
 
-    // --- 7. 系统管理 & 备份恢复 ---
+    // --- 8. 系统管理 & 备份恢复 ---
     function openManageModal() {
         document.getElementById('manageModal').style.display = 'flex';
         renderClassManageList();
@@ -711,24 +869,26 @@
             try {
                 const data = JSON.parse(e.target.result);
                 if (data.schoolData && data.statusStore && data.historyData) {
-                    if(confirm("Restore data? This overwrites current data.")) {
+                    if(confirm("确定要恢复备份吗？当前数据将被覆盖。(Restore data? This overwrites current data.)")) {
                         schoolData = data.schoolData;
                         statusStore = data.statusStore;
                         historyData = data.historyData;
                         localStorage.setItem('schoolData_2026', JSON.stringify(schoolData));
                         localStorage.setItem('schoolLogData_2026', JSON.stringify(statusStore));
                         localStorage.setItem('schoolHistory_2026', JSON.stringify(historyData));
+                        alert("✅ 恢复成功！页面将刷新。");
                         location.reload();
                     }
-                } else alert("Invalid file.");
+                } else alert("Invalid file format.");
             } catch (err) { alert("Error reading file."); }
         };
         reader.readAsText(file);
-        event.target.value = '';
+        event.target.value = ''; // 重置 input 以便再次选择同一文件
     }
 
     function renderClassManageList() {
         const list = document.getElementById('classManageList');
+        if(!list) return;
         list.innerHTML = '';
         Object.keys(schoolData).sort().forEach(cls => {
             let div = document.createElement('div');
@@ -776,6 +936,7 @@
     function renderStudentManageList() {
         const cls = document.getElementById('manageClassSelect').value;
         const list = document.getElementById('studentManageList');
+        if(!list) return;
         list.innerHTML = '';
         if (!cls || !schoolData[cls]) return;
 
@@ -865,12 +1026,10 @@
         event.target.value = '';
     }
 
-    // 监听窗口大小变化，自动刷新视图
     window.addEventListener('resize', () => {
         const wasMobile = isMobile;
         isMobile = window.innerWidth < 768;
         if(wasMobile !== isMobile) {
-            // 如果跨越了设备界限，重新同步数据
             if(isMobile) {
                 document.getElementById('m_dateInput').value = document.getElementById('dt_dateInput').value;
                 renderHomeClasses();
@@ -882,7 +1041,6 @@
         }
     });
 
-    // 启动应用
     init();
 </script>
 </body>
