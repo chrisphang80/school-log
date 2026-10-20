@@ -160,64 +160,57 @@
             .log-card-notes { margin-top: 10px; font-size: 12px; color: #d32f2f; background: #ffebee; padding: 8px; border-radius: 6px; }
         }
 
-        /* ================= 修复后的打印专用样式 ================= */
+        /* ================= 打印专用样式 (完全区分手机和电脑) ================= */
         @media print {
             @page { size: portrait; margin: 10mm; }
             body { background: white !important; margin: 0; padding: 0; }
             
-            /* 彻底隐藏所有的界面元素 */
+            /* 隐藏所有正常的界面元素 */
             .top-nav, .desktop-container, .mobile-only, .modal-overlay { display: none !important; }
             
-            /* 打印时只显示专属的打印容器 */
-            #printContainer {
-                display: block !important;
-                width: 100% !important;
-                padding: 0 !important;
-                margin: 0 !important;
-            }
+            /* 强制显示打印容器 */
+            #printContainer { display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
 
             .print-header { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 10px; }
             
-            /* 信息栏横向排列 */
+            /* 信息栏横排 */
             .print-info-row { 
-                display: flex !important; 
-                flex-direction: row !important; 
-                border: 1px solid #000 !important; 
-                margin-bottom: 10px; 
-                border-radius: 4px;
-                overflow: hidden;
+                display: flex !important; flex-direction: row !important; border: 1px solid #000 !important; 
+                margin-bottom: 10px; border-radius: 4px; overflow: hidden;
             }
             .print-info-row > div { 
-                flex: 1; 
-                padding: 6px 2px; 
-                text-align: center; 
-                border-right: 1px solid #000 !important; 
-                font-size: 12px;
+                flex: 1; padding: 6px 2px; text-align: center; border-right: 1px solid #000 !important; font-size: 12px;
             }
             .print-info-row > div:last-child { border-right: none !important; }
 
-            /* 表格排版 */
-            .print-table { font-size: 12px; width: 100%; margin-bottom: 10px; border-collapse: collapse; }
+            /* 表格基础排版 */
+            .print-table { width: 100%; margin-bottom: 10px; border-collapse: collapse; }
             .print-table th, .print-table td { padding: 5px 2px; border: 1px solid #000 !important; text-align: center; }
             .print-table th { background: #f5f5f5 !important; }
-            
+
             /* 底部统计与名单 */
             .print-stats { 
-                display: flex !important; 
-                border: 1px solid #000 !important; 
-                margin-bottom: 10px; 
-                page-break-inside: avoid; 
-                justify-content: space-between; 
-                font-size: 12px; 
-                padding: 10px;
+                display: flex !important; border: 1px solid #000 !important; margin-bottom: 10px; 
+                page-break-inside: avoid; justify-content: space-between; font-size: 12px; padding: 10px;
             }
             .print-absent { 
-                display: block !important;
-                page-break-inside: avoid; 
-                border: 1px solid #000 !important; 
-                padding: 10px; 
+                display: block !important; page-break-inside: avoid; border: 1px solid #000 !important; padding: 10px; 
             }
             .print-absent th, .print-absent td { border: 1px solid #000 !important; font-size: 12px; padding: 5px; text-align: center; }
+
+            /* --- 电脑端打印专属控制 --- */
+            body.print-desktop #desktopPrintView { display: block !important; }
+            body.print-desktop #mobilePrintView { display: none !important; }
+            body.print-desktop .print-table { font-size: 11px; }
+
+            /* --- 手机端打印专属控制 (重新排版，专门针对 A4 直页优化) --- */
+            body.print-mobile #desktopPrintView { display: none !important; }
+            body.print-mobile #mobilePrintView { display: block !important; }
+            
+            body.print-mobile .print-table { font-size: 13px; } /* 手机端字体稍微放大一点 */
+            body.print-mobile .print-table th, body.print-mobile .print-table td { padding: 6px 4px; }
+            /* 隐藏手机端表格中用于L/P合并显示的斜杠，使排版更干净 */
+            body.print-mobile .print-table .lp-merge { font-size: 11px; color: #555; } 
         }
     </style>
 </head>
@@ -279,7 +272,7 @@
     <!-- 右侧：日志表 -->
     <div class="log-panel">
         <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 10px;" class="no-print">
-            <button onclick="printReport()" style="padding: 8px 15px; background: #455A64; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;" data-i18n="btn_print">🖨️ 打印报告</button>
+            <button onclick="printReport('desktop')" style="padding: 8px 15px; background: #455A64; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;" data-i18n="btn_print">🖨️ 打印报告</button>
         </div>
 
         <div id="desktopReportView">
@@ -370,7 +363,7 @@
         <div class="attendance-header">
             <button class="back-btn" onclick="goToPage('m_pageHome')">❮ <span data-i18n="btn_back">返回</span></button>
             <h3 style="margin:0; font-size:18px;" data-i18n="log_title">📊 学校日志</h3>
-            <button class="back-btn" onclick="printReport()" style="color: #455A64;" data-i18n="btn_print">🖨️</button>
+            <button class="back-btn" onclick="printReport('mobile')" style="color: #455A64;" data-i18n="btn_print">🖨️</button>
         </div>
 
         <div class="info-card" style="padding: 10px; margin-bottom: 5px; text-align: center; font-size: 13px;">
@@ -398,44 +391,83 @@
     </div>
 </div>
 
-<!-- ==================== 专门用于打印的容器 ==================== -->
+<!-- ==================== 专门用于打印的容器 (彻底区分电脑与手机) ==================== -->
 <div id="printContainer" style="display: none;">
-    <div class="print-header" data-i18n="log_header">学校日志 REKOD HARIAN SEKOLAH</div>
-    <div class="print-info-row">
-        <div><span data-i18n="sem_label">学期 Semester</span> <strong class="dispSem">-</strong></div>
-        <div><span data-i18n="week_label">周次 Minggu</span> <strong class="dispWeek">-</strong></div>
-        <div><span data-i18n="day_label">星期 Hari</span> <strong class="dispDay">-</strong></div>
-        <div><span data-i18n="date_label">日期 Tarikh</span> <strong class="dispDate">-</strong></div>
-    </div>
-    
-    <table class="print-table">
-        <thead>
-            <tr>
-                <th rowspan="2" data-i18n="th_class">项目<br>人数<br>组别</th>
-                <th colspan="2" data-i18n="th_total">Keramaian<br>在籍</th>
-                <th colspan="2" data-i18n="th_present">Kedatangan<br>出席</th>
-                <th colspan="2" data-i18n="th_absent">Tak Hadir<br>缺席</th>
-                <th rowspan="2" data-i18n="th_notes">Catatan<br>备注</th>
-                <th rowspan="2" data-i18n="th_rate">出席率<br>Kadar</th>
-            </tr>
-            <tr><th>L</th><th>P</th><th>L</th><th>P</th><th>L</th><th>P</th></tr>
-        </thead>
-        <tbody id="printTableBody"></tbody>
-    </table>
-    
-    <div class="print-stats">
-        <div style="text-align: center;"><span data-i18n="stat_total">今日全校总人数</span><br><strong id="printGlobalTotal" style="font-size: 16px;">-</strong></div>
-        <div style="text-align: center;"><span data-i18n="stat_present">今日全级出席</span><br><strong id="printGlobalPresent" style="font-size: 16px;">-</strong></div>
-        <div style="text-align: center;"><span data-i18n="stat_absent">今日全级缺席</span><br><strong id="printGlobalAbsent" style="font-size: 16px;">-</strong></div>
-        <div style="text-align: center;"><span data-i18n="stat_rate">全级出席率</span><br><strong id="printGlobalPercent" style="font-size: 16px;">-</strong></div>
-    </div>
-    
-    <div class="print-absent">
-        <h4 style="margin: 0 0 10px 0; color: #000;" data-i18n="absent_title">📝 缺席学生名单</h4>
-        <table class="print-absent" style="width: 100%; border-collapse: collapse;">
-            <thead><tr><th data-i18n="th_absent_class">班级</th><th data-i18n="th_absent_no">编号</th><th data-i18n="th_absent_name">姓名</th><th data-i18n="th_absent_gender">性别</th></tr></thead>
-            <tbody id="printAbsentListBody"></tbody>
+    <!-- 电脑端打印视图 -->
+    <div id="desktopPrintView">
+        <div class="print-header" data-i18n="log_header">学校日志 REKOD HARIAN SEKOLAH</div>
+        <div class="print-info-row">
+            <div><span data-i18n="sem_label">学期 Semester</span> <strong class="dispSem">-</strong></div>
+            <div><span data-i18n="week_label">周次 Minggu</span> <strong class="dispWeek">-</strong></div>
+            <div><span data-i18n="day_label">星期 Hari</span> <strong class="dispDay">-</strong></div>
+            <div><span data-i18n="date_label">日期 Tarikh</span> <strong class="dispDate">-</strong></div>
+        </div>
+        <table class="print-table">
+            <thead>
+                <tr>
+                    <th rowspan="2" data-i18n="th_class">项目<br>人数<br>组别</th>
+                    <th colspan="2" data-i18n="th_total">Keramaian<br>在籍</th>
+                    <th colspan="2" data-i18n="th_present">Kedatangan<br>出席</th>
+                    <th colspan="2" data-i18n="th_absent">Tak Hadir<br>缺席</th>
+                    <th rowspan="2" data-i18n="th_notes">Catatan<br>备注</th>
+                    <th rowspan="2" data-i18n="th_rate">出席率<br>Kadar</th>
+                </tr>
+                <tr><th>L</th><th>P</th><th>L</th><th>P</th><th>L</th><th>P</th></tr>
+            </thead>
+            <tbody id="printTableBodyDt"></tbody>
         </table>
+        <div class="print-stats">
+            <div style="text-align: center;"><span data-i18n="stat_total">今日全校总人数</span><br><strong id="printGlobalTotalDt" style="font-size: 16px;">-</strong></div>
+            <div style="text-align: center;"><span data-i18n="stat_present">今日全级出席</span><br><strong id="printGlobalPresentDt" style="font-size: 16px;">-</strong></div>
+            <div style="text-align: center;"><span data-i18n="stat_absent">今日全级缺席</span><br><strong id="printGlobalAbsentDt" style="font-size: 16px;">-</strong></div>
+            <div style="text-align: center;"><span data-i18n="stat_rate">全级出席率</span><br><strong id="printGlobalPercentDt" style="font-size: 16px;">-</strong></div>
+        </div>
+        <div class="print-absent">
+            <h4 style="margin: 0 0 10px 0; color: #000;" data-i18n="absent_title">📝 缺席学生名单</h4>
+            <table class="print-absent-table" style="width: 100%; border-collapse: collapse;">
+                <thead><tr><th data-i18n="th_absent_class">班级</th><th data-i18n="th_absent_no">编号</th><th data-i18n="th_absent_name">姓名</th><th data-i18n="th_absent_gender">性别</th></tr></thead>
+                <tbody id="printAbsentListBodyDt"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 手机端打印视图 (专门重新调整的表格，适合一页 A4 纵向) -->
+    <div id="mobilePrintView">
+        <div class="print-header" data-i18n="log_header">学校日志</div>
+        <div class="print-info-row">
+            <div><span data-i18n="sem_label">学期</span>: <strong class="dispSem">-</strong></div>
+            <div><span data-i18n="week_label">周次</span>: <strong class="dispWeek">-</strong></div>
+            <div><span data-i18n="day_label">星期</span>: <strong class="dispDay">-</strong></div>
+            <div><span data-i18n="date_label">日期</span>: <strong class="dispDate">-</strong></div>
+        </div>
+        
+        <!-- 手机精简版表格 (合并 L/P) -->
+        <table class="print-table">
+            <thead>
+                <tr>
+                    <th data-i18n="th_class_short">班级</th>
+                    <th data-i18n="th_total_short">在籍<br>(L/P)</th>
+                    <th data-i18n="th_present_short">出席<br>(L/P)</th>
+                    <th data-i18n="th_absent_short">缺席<br>(L/P)</th>
+                    <th data-i18n="th_rate_short">出席率</th>
+                </tr>
+            </thead>
+            <tbody id="printTableBodyMb"></tbody>
+        </table>
+
+        <div class="print-stats">
+            <div style="text-align: center;"><span data-i18n="stat_total">全校总人数</span><br><strong id="printGlobalTotalMb" style="font-size: 16px;">-</strong></div>
+            <div style="text-align: center;"><span data-i18n="stat_present">全级出席</span><br><strong id="printGlobalPresentMb" style="font-size: 16px;">-</strong></div>
+            <div style="text-align: center;"><span data-i18n="stat_absent">全级缺席</span><br><strong id="printGlobalAbsentMb" style="font-size: 16px;">-</strong></div>
+            <div style="text-align: center;"><span data-i18n="stat_rate">全级出席率</span><br><strong id="printGlobalPercentMb" style="font-size: 16px;">-</strong></div>
+        </div>
+        <div class="print-absent">
+            <h4 style="margin: 0 0 10px 0; color: #000;" data-i18n="absent_title">📝 缺席学生名单</h4>
+            <table class="print-absent-table" style="width: 100%; border-collapse: collapse;">
+                <thead><tr><th data-i18n="th_absent_class">班级</th><th data-i18n="th_absent_name">姓名</th><th data-i18n="th_absent_gender">性别</th></tr></thead>
+                <tbody id="printAbsentListBodyMb"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -492,6 +524,7 @@
             attendance_tip: "默认全员出席。点击学生名字将其标记为缺席 (变红)。", btn_view_log: "📊 查看学校日志 (School Log)",
             log_title: "📊 学校日志", log_header: "学校日志 REKOD HARIAN SEKOLAH",
             th_class: "项目<br>人数<br>组别", th_total: "Keramaian<br>在籍", th_present: "Kedatangan<br>出席", th_absent: "Tak Hadir<br>缺席", th_notes: "Catatan<br>备注", th_rate: "出席率<br>Kadar",
+            th_class_short: "班级", th_total_short: "在籍<br>(L/P)", th_present_short: "出席<br>(L/P)", th_absent_short: "缺席<br>(L/P)", th_rate_short: "出席率",
             stat_total: "今日全校总人数", stat_present: "今日全级出席", stat_absent: "今日全级缺席", stat_rate: "全级出席率",
             absent_title: "📝 缺席学生名单", th_absent_class: "班级", th_absent_no: "编号", th_absent_name: "姓名", th_absent_gender: "性别",
             modal_manage: "⚙️ 系统管理", csv_tip: "上传 CSV 批量导入学生 (Class,Name,Gender)", btn_upload: "上传 CSV", btn_template: "下载模板",
@@ -505,6 +538,7 @@
             attendance_tip: "All present by default. Tap name to mark absent (Red).", btn_view_log: "📊 View School Log",
             log_title: "📊 School Log", log_header: "School Log REKOD HARIAN SEKOLAH",
             th_class: "Class", th_total: "Enrolled", th_present: "Present", th_absent: "Absent", th_notes: "Notes", th_rate: "Rate",
+            th_class_short: "Class", th_total_short: "Enrolled<br>(L/P)", th_present_short: "Present<br>(L/P)", th_absent_short: "Absent<br>(L/P)", th_rate_short: "Rate",
             stat_total: "Total Students", stat_present: "Total Present", stat_absent: "Total Absent", stat_rate: "Overall Rate",
             absent_title: "📝 Absentee List", th_absent_class: "Class", th_absent_no: "No.", th_absent_name: "Name", th_absent_gender: "Gender",
             modal_manage: "⚙️ System Management", csv_tip: "Upload CSV (Class,Name,Gender)", btn_upload: "Upload CSV", btn_template: "Download Template",
@@ -518,6 +552,7 @@
             attendance_tip: "Semua hadir secara lalai. Ketik nama untuk tanda tidak hadir (Merah).", btn_view_log: "📊 Lihat Log Sekolah",
             log_title: "📊 Log Sekolah", log_header: "Rekod Harian Sekolah",
             th_class: "Kelas", th_total: "Keramaian", th_present: "Kedatangan", th_absent: "Tak Hadir", th_notes: "Catatan", th_rate: "Kadar",
+            th_class_short: "Kelas", th_total_short: "Keramaian<br>(L/P)", th_present_short: "Hadir<br>(L/P)", th_absent_short: "Tidak Hadir<br>(L/P)", th_rate_short: "Kadar",
             stat_total: "Jumlah Pelajar", stat_present: "Jumlah Hadir", stat_absent: "Jumlah Tidak Hadir", stat_rate: "Kadar Keseluruhan",
             absent_title: "📝 Senarai Tidak Hadir", th_absent_class: "Kelas", th_absent_no: "No.", th_absent_name: "Nama", th_absent_gender: "Jantina",
             modal_manage: "⚙️ Pengurusan Sistem", csv_tip: "Muat naik CSV (Class,Name,Gender)", btn_upload: "Muat Naik CSV", btn_template: "Templat",
@@ -853,50 +888,71 @@
         }
     }
 
-    // --- 8. 打印功能 (彻底修复空白页问题) ---
-    function printReport() {
-        // 1. 获取数据并渲染到专属的打印区
+    // --- 8. 打印功能 (彻底区分电脑和手机，并修复手机排版) ---
+    function printReport(mode) {
+        document.body.classList.remove('print-desktop', 'print-mobile');
+        document.body.classList.add(`print-${mode}`);
+
         const { data, grand, absentList } = computeLogData();
         
-        const printTableBody = document.getElementById('printTableBody');
-        printTableBody.innerHTML = data.map(d => `
-            <tr>
-                <td>${d.cls}</td><td>${d.rL}</td><td>${d.rP}</td>
-                <td>${d.rPL}</td><td>${d.rPP}</td>
-                <td>${d.rAL}</td><td>${d.rAP}</td>
-                <td style="font-size:10px;">${d.catatan}</td>
-                <td style="font-weight:bold;">${d.rate}</td>
-            </tr>
-        `).join('');
-        
-        printTableBody.innerHTML += `
-            <tr style="font-weight:bold; background:#eee;">
-                <td>Total</td><td>${grand.totalL}</td><td>${grand.totalP}</td>
-                <td>${grand.pL}</td><td>${grand.pP}</td><td>${grand.aL}</td><td>${grand.aP}</td><td></td><td></td>
-            </tr>
-        `;
+        if (mode === 'desktop') {
+            const dtTbody = document.getElementById('printTableBodyDt');
+            dtTbody.innerHTML = data.map(d => `
+                <tr>
+                    <td>${d.cls}</td><td>${d.rL}</td><td>${d.rP}</td>
+                    <td>${d.rPL}</td><td>${d.rPP}</td>
+                    <td>${d.rAL}</td><td>${d.rAP}</td>
+                    <td style="font-size:10px;">${d.catatan}</td>
+                    <td style="font-weight:bold;">${d.rate}</td>
+                </tr>
+            `).join('');
+            dtTbody.innerHTML += `
+                <tr style="font-weight:bold; background:#eee;">
+                    <td>Total</td><td>${grand.totalL}</td><td>${grand.totalP}</td>
+                    <td>${grand.pL}</td><td>${grand.pP}</td><td>${grand.aL}</td><td>${grand.aP}</td><td></td><td></td>
+                </tr>
+            `;
+            document.getElementById('printGlobalTotalDt').innerText = grand.totalL + grand.totalP;
+            document.getElementById('printGlobalPresentDt').innerText = grand.pL + grand.pP;
+            document.getElementById('printGlobalAbsentDt').innerText = grand.aL + grand.aP;
+            document.getElementById('printGlobalPercentDt').innerText = ((grand.pL+grand.pP)/(grand.totalL+grand.totalP)*100 || 0).toFixed(2) + '%';
+            document.getElementById('printAbsentListBodyDt').innerHTML = absentList.length === 0 
+                ? `<tr><td colspan="4" style="text-align:center;">🎉 今日全员出席</td></tr>`
+                : absentList.map(a => `<tr><td>${a.cls}</td><td></td><td>${a.name}</td><td>${a.gender}</td></tr>`).join('');
 
-        document.getElementById('printGlobalTotal').innerText = grand.totalL + grand.totalP;
-        document.getElementById('printGlobalPresent').innerText = grand.pL + grand.pP;
-        document.getElementById('printGlobalAbsent').innerText = grand.aL + grand.aP;
-        document.getElementById('printGlobalPercent').innerText = ((grand.pL+grand.pP)/(grand.totalL+grand.totalP)*100 || 0).toFixed(2) + '%';
-
-        const printAbsBody = document.getElementById('printAbsentListBody');
-        if(absentList.length === 0) {
-            printAbsBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">🎉 今日全员出席</td></tr>`;
         } else {
-            printAbsBody.innerHTML = absentList.map(a => `<tr><td>${a.cls}</td><td></td><td>${a.name}</td><td>${a.gender}</td></tr>`).join('');
+            // 手机端打印用 (合并 L/P 以适应宽度)
+            const mbTbody = document.getElementById('printTableBodyMb');
+            mbTbody.innerHTML = data.map(d => `
+                <tr>
+                    <td>${d.cls}</td>
+                    <td><span class="lp-merge">L:</span>${d.rL} <span class="lp-merge">P:</span>${d.rP}</td>
+                    <td><span class="lp-merge">L:</span>${d.rPL} <span class="lp-merge">P:</span>${d.rPP}</td>
+                    <td><span class="lp-merge">L:</span>${d.rAL} <span class="lp-merge">P:</span>${d.rAP}</td>
+                    <td style="font-weight:bold;">${d.rate}</td>
+                </tr>
+            `).join('');
+            mbTbody.innerHTML += `
+                <tr style="font-weight:bold; background:#eee;">
+                    <td>Total</td>
+                    <td><span class="lp-merge">L:</span>${grand.totalL} <span class="lp-merge">P:</span>${grand.totalP}</td>
+                    <td><span class="lp-merge">L:</span>${grand.pL} <span class="lp-merge">P:</span>${grand.pP}</td>
+                    <td><span class="lp-merge">L:</span>${grand.aL} <span class="lp-merge">P:</span>${grand.aP}</td>
+                    <td>${((grand.pL+grand.pP)/(grand.totalL+grand.totalP)*100 || 0).toFixed(2)}%</td>
+                </tr>
+            `;
+            document.getElementById('printGlobalTotalMb').innerText = grand.totalL + grand.totalP;
+            document.getElementById('printGlobalPresentMb').innerText = grand.pL + grand.pP;
+            document.getElementById('printGlobalAbsentMb').innerText = grand.aL + grand.aP;
+            document.getElementById('printGlobalPercentMb').innerText = ((grand.pL+grand.pP)/(grand.totalL+grand.totalP)*100 || 0).toFixed(2) + '%';
+            document.getElementById('printAbsentListBodyMb').innerHTML = absentList.length === 0 
+                ? `<tr><td colspan="3" style="text-align:center;">🎉 今日全员出席</td></tr>`
+                : absentList.map(a => `<tr><td>${a.cls}</td><td>${a.name}</td><td>${a.gender}</td></tr>`).join('');
         }
 
-        // 2. 将打印区域临时设为可见 (脱离 hidden)，唤起打印，打印完再隐藏
-        const printContainer = document.getElementById('printContainer');
-        printContainer.style.display = 'block';
-        
-        // 等待 DOM 渲染完成后触发打印
+        // 确保 DOM 更新后唤起打印
         setTimeout(() => {
             window.print();
-            // 打印预览关闭后，恢复隐藏状态
-            printContainer.style.display = 'none';
         }, 100);
     }
 
