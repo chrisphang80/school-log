@@ -529,7 +529,8 @@
             absent_title: "📝 缺席学生名单", th_absent_class: "班级", th_absent_no: "编号", th_absent_name: "姓名", th_absent_gender: "性别",
             modal_manage: "⚙️ 系统管理", csv_tip: "上传 CSV 批量导入学生 (Class,Name,Gender)", btn_upload: "上传 CSV", btn_template: "下载模板",
             manage_classes: "🏫 班级管理", manage_students: "👨‍🎓 学生管理", btn_add: "添加", btn_reorder: "重排",
-            days: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+            days: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'],
+            students_count: "人", th_total_label: "在籍", th_present_label: "出席", th_absent_label: "缺席", th_notes_label: "备注", all_present_msg: "🎉 今日全员出席", total_label: "Total"
         },
         en: {
             app_title: "🏫 School Log System", console_title: "📋 Attendance Console", date_label: "Date", sem_label: "Sem", week_label: "Week", day_label: "Day",
@@ -543,7 +544,8 @@
             absent_title: "📝 Absentee List", th_absent_class: "Class", th_absent_no: "No.", th_absent_name: "Name", th_absent_gender: "Gender",
             modal_manage: "⚙️ System Management", csv_tip: "Upload CSV (Class,Name,Gender)", btn_upload: "Upload CSV", btn_template: "Download Template",
             manage_classes: "🏫 Manage Classes", manage_students: "👨‍🎓 Manage Students", btn_add: "Add", btn_reorder: "Reorder",
-            days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+            days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+            students_count: "students", th_total_label: "Enrolled", th_present_label: "Present", th_absent_label: "Absent", th_notes_label: "Notes", all_present_msg: "🎉 All present today", total_label: "Total"
         },
         ms: {
             app_title: "🏫 Sistem Log Sekolah", console_title: "📋 Konsol Kehadiran", date_label: "Tarikh", sem_label: "Sem", week_label: "Minggu", day_label: "Hari",
@@ -557,7 +559,8 @@
             absent_title: "📝 Senarai Tidak Hadir", th_absent_class: "Kelas", th_absent_no: "No.", th_absent_name: "Nama", th_absent_gender: "Jantina",
             modal_manage: "⚙️ Pengurusan Sistem", csv_tip: "Muat naik CSV (Class,Name,Gender)", btn_upload: "Muat Naik CSV", btn_template: "Templat",
             manage_classes: "🏫 Urus Kelas", manage_students: "👨‍🎓 Urus Pelajar", btn_add: "Tambah", btn_reorder: "Susun",
-            days: ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu']
+            days: ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'],
+            students_count: "pelajar", th_total_label: "Keramaian", th_present_label: "Hadir", th_absent_label: "Tidak Hadir", th_notes_label: "Catatan", all_present_msg: "🎉 Semua hadir hari ini", total_label: "Jumlah"
         }
     };
 
@@ -596,6 +599,7 @@
         
         calculateWeekAndSemester(); // 强制刷新日期文字（确保星期切换语言）
         renderAllViews();
+        renderHomeClasses(); // 确保手机端首页班级列表也刷新
         if(document.getElementById('manageModal').style.display === 'flex') {
             renderClassManageList();
             renderStudentManageList();
@@ -736,7 +740,7 @@
         Object.keys(schoolData).sort().forEach(cls => {
             const btn = document.createElement('div');
             btn.className = 'class-btn';
-            btn.innerHTML = `${cls}<span class="count">${schoolData[cls].length} 人</span>`;
+            btn.innerHTML = `${cls}<span class="count">${schoolData[cls].length} ${i18n[currentLang].students_count}</span>`;
             btn.onclick = () => {
                 currentClass = cls;
                 document.getElementById('m_currentClassName').innerText = cls;
@@ -833,13 +837,13 @@
         
         tbody.innerHTML += `
             <tr style="font-weight:bold; background:#e0e0e0;">
-                <td>Total</td><td>${grand.totalL}</td><td>${grand.totalP}</td>
+                <td>${i18n[currentLang].total_label}</td><td>${grand.totalL}</td><td>${grand.totalP}</td>
                 <td>${grand.pL}</td><td>${grand.pP}</td><td>${grand.aL}</td><td>${grand.aP}</td><td></td><td></td>
             </tr>
         `;
 
         if(absentList.length === 0) {
-            absTbody.innerHTML = `<tr><td colspan="4" style="color:#4CAF50;">🎉 今日全员出席</td></tr>`;
+            absTbody.innerHTML = `<tr><td colspan="4" style="color:#4CAF50;">${i18n[currentLang].all_present_msg}</td></tr>`;
         } else {
             absTbody.innerHTML = absentList.map(a => `<tr><td>${a.cls}</td><td>${a.name}</td><td>${a.gender}</td><td></td></tr>`).join('');
         }
@@ -863,18 +867,18 @@
                         <div class="log-card-rate">${d.rate}</div>
                     </div>
                     <div class="log-card-body">
-                        <div class="log-data-group"><div class="title">${i18n[currentLang].th_total.split('<br>')[1] || '在籍'}</div><div class="value">${d.rL} / ${d.rP}</div></div>
-                        <div class="log-data-group"><div class="title">${i18n[currentLang].th_present.split('<br>')[1] || '出席'}</div><div class="value" style="color:#2e7d32;">${d.rPL} / ${d.rPP}</div></div>
-                        <div class="log-data-group"><div class="title">${i18n[currentLang].th_absent.split('<br>')[1] || '缺席'}</div><div class="value" style="color:#c62828;">${d.rAL} / ${d.rAP}</div></div>
+                        <div class="log-data-group"><div class="title">${i18n[currentLang].th_total_label}</div><div class="value">${d.rL} / ${d.rP}</div></div>
+                        <div class="log-data-group"><div class="title">${i18n[currentLang].th_present_label}</div><div class="value" style="color:#2e7d32;">${d.rPL} / ${d.rPP}</div></div>
+                        <div class="log-data-group"><div class="title">${i18n[currentLang].th_absent_label}</div><div class="value" style="color:#c62828;">${d.rAL} / ${d.rAP}</div></div>
                     </div>
-                    ${d.catatan ? `<div class="log-card-notes">${i18n[currentLang].th_notes.split('<br>')[1] || '备注'}: ${d.catatan}</div>` : ''}
+                    ${d.catatan ? `<div class="log-card-notes">${i18n[currentLang].th_notes_label}: ${d.catatan}</div>` : ''}
                 </div>
             `).join('');
         }
 
         if(absTbody) {
             if(absentList.length === 0) {
-                absTbody.innerHTML = `<tr><td colspan="3" style="color:#4CAF50; padding:10px;">🎉 今日全员出席</td></tr>`;
+                absTbody.innerHTML = `<tr><td colspan="3" style="color:#4CAF50; padding:10px;">${i18n[currentLang].all_present_msg}</td></tr>`;
             } else {
                 absTbody.innerHTML = absentList.map(a => `<tr><td>${a.cls}</td><td>${a.name}</td><td>${a.gender}</td></tr>`).join('');
             }
@@ -908,7 +912,7 @@
             `).join('');
             dtTbody.innerHTML += `
                 <tr style="font-weight:bold; background:#eee;">
-                    <td>Total</td><td>${grand.totalL}</td><td>${grand.totalP}</td>
+                    <td>${i18n[currentLang].total_label}</td><td>${grand.totalL}</td><td>${grand.totalP}</td>
                     <td>${grand.pL}</td><td>${grand.pP}</td><td>${grand.aL}</td><td>${grand.aP}</td><td></td><td></td>
                 </tr>
             `;
@@ -917,7 +921,7 @@
             document.getElementById('printGlobalAbsentDt').innerText = grand.aL + grand.aP;
             document.getElementById('printGlobalPercentDt').innerText = ((grand.pL+grand.pP)/(grand.totalL+grand.totalP)*100 || 0).toFixed(2) + '%';
             document.getElementById('printAbsentListBodyDt').innerHTML = absentList.length === 0 
-                ? `<tr><td colspan="4" style="text-align:center;">🎉 今日全员出席</td></tr>`
+                ? `<tr><td colspan="4" style="text-align:center;">${i18n[currentLang].all_present_msg}</td></tr>`
                 : absentList.map(a => `<tr><td>${a.cls}</td><td></td><td>${a.name}</td><td>${a.gender}</td></tr>`).join('');
 
         } else {
@@ -934,7 +938,7 @@
             `).join('');
             mbTbody.innerHTML += `
                 <tr style="font-weight:bold; background:#eee;">
-                    <td>Total</td>
+                    <td>${i18n[currentLang].total_label}</td>
                     <td><span class="lp-merge">L:</span>${grand.totalL} <span class="lp-merge">P:</span>${grand.totalP}</td>
                     <td><span class="lp-merge">L:</span>${grand.pL} <span class="lp-merge">P:</span>${grand.pP}</td>
                     <td><span class="lp-merge">L:</span>${grand.aL} <span class="lp-merge">P:</span>${grand.aP}</td>
@@ -946,7 +950,7 @@
             document.getElementById('printGlobalAbsentMb').innerText = grand.aL + grand.aP;
             document.getElementById('printGlobalPercentMb').innerText = ((grand.pL+grand.pP)/(grand.totalL+grand.totalP)*100 || 0).toFixed(2) + '%';
             document.getElementById('printAbsentListBodyMb').innerHTML = absentList.length === 0 
-                ? `<tr><td colspan="3" style="text-align:center;">🎉 今日全员出席</td></tr>`
+                ? `<tr><td colspan="3" style="text-align:center;">${i18n[currentLang].all_present_msg}</td></tr>`
                 : absentList.map(a => `<tr><td>${a.cls}</td><td>${a.name}</td><td>${a.gender}</td></tr>`).join('');
         }
 
